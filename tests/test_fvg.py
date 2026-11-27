@@ -1,4 +1,3 @@
-
 import unittest
 import pandas as pd
 
@@ -29,7 +28,7 @@ class TestFVGEngine(unittest.TestCase):
 
     def test_bullish_fvg_detected(self):
         result = identify_fvg(
-            self.bullish_data(),
+            self.bullish_data().iloc[:3],
             index=2,
             direction="BULLISH",
         )
