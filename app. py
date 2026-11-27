@@ -2,6 +2,12 @@
 import streamlit as st
 from datetime import datetime
 
+from strategies.registry import (
+    get_all_strategies,
+    get_strategy_counts,
+    get_strategies_by_category
+)
+
 # ==========================================
 # BIGMAN — TRADING INTELLIGENCE TERMINAL
 # ==========================================
@@ -12,13 +18,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
-# ==========================================
-# SESSION CONFIGURATION
-# ==========================================
-
-if "mode" not in st.session_state:
-    st.session_state.mode = "Paper Trading"
 
 # ==========================================
 # CUSTOM DESIGN
@@ -39,10 +38,10 @@ h1, h2, h3, p, label {
     color: #ffffff;
 }
 
-.metric-card {
+div[data-testid="stMetric"] {
     background: #151f35;
-    padding: 20px;
-    border-radius: 12px;
+    padding: 15px;
+    border-radius: 10px;
     border: 1px solid #263653;
 }
 
@@ -50,15 +49,15 @@ h1, h2, h3, p, label {
     color: #20d9c4;
     font-weight: bold;
 }
-
-div[data-testid="stMetric"] {
-    background: #151f35;
-    padding: 15px;
-    border-radius: 10px;
-    border: 1px solid #263653;
-}
 </style>
 """, unsafe_allow_html=True)
+
+# ==========================================
+# LOAD STRATEGY DATA
+# ==========================================
+
+strategies = get_all_strategies()
+counts = get_strategy_counts()
 
 # ==========================================
 # SIDEBAR
@@ -66,13 +65,13 @@ div[data-testid="stMetric"] {
 
 st.sidebar.title("⚡ BIGMAN")
 st.sidebar.caption("TRADING INTELLIGENCE SYSTEM")
-
 st.sidebar.divider()
 
 page = st.sidebar.radio(
     "NAVIGATION",
     [
         "Dashboard",
+        "Strategy Repository",
         "Market Analysis",
         "Strategy Engine",
         "Trade Signals",
@@ -85,18 +84,13 @@ page = st.sidebar.radio(
 
 st.sidebar.divider()
 
-st.sidebar.subheader("Trading Mode")
-
 mode = st.sidebar.selectbox(
-    "Select Mode",
+    "Trading Mode",
     ["Paper Trading", "Analysis Only"]
 )
 
-st.session_state.mode = mode
-
 st.sidebar.success("LIVE ORDERS DISABLED")
-
-st.sidebar.caption("BIGMAN | Development Build 0.1")
+st.sidebar.caption("BIGMAN | Development Build 0.2")
 
 # ==========================================
 # DASHBOARD
@@ -108,7 +102,7 @@ if page == "Dashboard":
     st.subheader("Smart Money & Price Action Trading Terminal")
 
     st.markdown(
-        '<p class="status">● SYSTEM INITIALIZED | PAPER TRADING ONLY</p>',
+        '<p class="status">● SYSTEM INITIALIZED | LIVE ORDERS DISABLED</p>',
         unsafe_allow_html=True
     )
 
@@ -116,60 +110,95 @@ if page == "Dashboard":
 
     col1, col2, col3, col4 = st.columns(4)
 
-    col1.metric("Trading Mode", mode)
-    col2.metric("Strategies Catalogued", "16")
+    col1.metric("Catalogued Strategies", counts["catalogued"])
+    col2.metric("Missing Strategies", counts["missing"])
     col3.metric("Active Signals", "0")
-    col4.metric("Live Orders", "DISABLED")
+    col4.metric("Trading Mode", mode)
 
     st.divider()
 
-    st.subheader("Trading Intelligence")
+    st.subheader("Strategy Overview")
 
-    left, right = st.columns(2)
+    category1, category2, category3 = st.columns(3)
 
-    with left:
-        st.markdown("### Strategy Repository")
-        st.info("""
-        **Price Action:** 5 strategies
+    category1.metric(
+        "Price Action",
+        len(get_strategies_by_category("Price Action"))
+    )
 
-        **Smart Money Concepts:** 10 records
+    category2.metric(
+        "Smart Money Concepts",
+        len(get_strategies_by_category("SMC"))
+    )
 
-        **Risk Management:** 1 strategy
-
-        Strategy validation and implementation are pending.
-        """)
-
-    with right:
-        st.markdown("### System Modules")
-
-        modules = [
-            "Market Structure Engine",
-            "Liquidity Detection Engine",
-            "Order Block Engine",
-            "Fair Value Gap Engine",
-            "Fibonacci Engine",
-            "Candle Confirmation Engine",
-            "Confluence Evaluator",
-            "Risk Management Engine"
-        ]
-
-        for module in modules:
-            st.write("⏳", module)
+    category3.metric(
+        "Risk Management",
+        len(get_strategies_by_category("Risk Management"))
+    )
 
     st.divider()
 
-    st.subheader("Development Progress")
+    st.subheader("System Modules")
 
-    st.progress(0.05)
+    modules = [
+        "Market Structure Engine",
+        "Liquidity Detection Engine",
+        "Order Block Engine",
+        "Fair Value Gap Engine",
+        "Fibonacci Engine",
+        "Candle Confirmation Engine",
+        "Confluence Evaluator",
+        "Risk Management Engine"
+    ]
 
-    st.caption("Foundation initialized. Strategy engines are not yet implemented.")
+    for module in modules:
+        st.write("⏳", module)
+
+    st.divider()
 
     st.caption(
-        f"System date: {datetime.now().strftime('%d %B %Y')}"
+        f"Last dashboard refresh: {datetime.now().strftime('%d %B %Y, %H:%M:%S')}"
+    )
+
+    st.info(
+        "Strategy records are loaded. Trading logic and market data "
+        "integration are not yet enabled."
     )
 
 # ==========================================
-# OTHER PAGES — INITIAL PLACEHOLDERS
+# STRATEGY REPOSITORY
+# ==========================================
+
+elif page == "Strategy Repository":
+
+    st.title("📚 BIGMAN Strategy Repository")
+
+    st.metric("Catalogued Strategies", counts["catalogued"])
+
+    selected_category = st.selectbox(
+        "Filter by category",
+        ["All", "Price Action", "SMC", "Risk Management"]
+    )
+
+    if selected_category == "All":
+        filtered = strategies
+    else:
+        filtered = get_strategies_by_category(selected_category)
+
+    for strategy in filtered:
+
+        with st.expander(
+            f"{strategy['id']} — {strategy['name']}"
+        ):
+            st.write("Category:", strategy["category"])
+            st.write("Status:", strategy["status"])
+
+    st.warning(
+        "Catalogue entries are not yet executable trading strategies."
+    )
+
+# ==========================================
+# OTHER MODULES
 # ==========================================
 
 elif page == "Market Analysis":
@@ -178,31 +207,32 @@ elif page == "Market Analysis":
 
 elif page == "Strategy Engine":
     st.title("🧠 Strategy Engine")
-    st.info("Individual strategy modules will be integrated here.")
+    st.info("Strategy implementation is pending.")
 
 elif page == "Trade Signals":
     st.title("🎯 Trade Signals")
-    st.info("No trading signals are generated yet.")
+    st.info("No trading signals are generated.")
 
 elif page == "Backtesting":
     st.title("🧪 Backtesting")
-    st.info("Historical testing engine is under development.")
+    st.info("Historical testing engine is pending.")
 
 elif page == "Risk Management":
     st.title("🛡️ Risk Management")
-    st.info("RM-001 will be implemented here.")
+    st.info("Risk validation engine is pending.")
 
 elif page == "Trade Journal":
     st.title("📒 Trade Journal")
-    st.info("Trade recording functionality is pending.")
+    st.info("Trade journal is pending.")
 
 elif page == "System Status":
-    st.title("⚙️ System Status")
+    st.title("⚙️ BIGMAN System Status")
 
     st.write("Application: BIGMAN")
-    st.write("Version: 0.1")
-    st.write("Mode:", mode)
-    st.write("Live trading: Disabled")
-    st.write("Database: Not connected")
+    st.write("Version: 0.2")
+    st.write("Trading mode:", mode)
+    st.write("Catalogued strategies:", counts["catalogued"])
+    st.write("Missing strategies:", counts["missing"])
     st.write("Market feed: Not connected")
-    st.write("Strategy execution: Not enabled")
+    st.write("Database: Not connected")
+    st.write("Live orders: Disabled")
