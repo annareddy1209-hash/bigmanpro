@@ -1,10 +1,12 @@
 
 import unittest
+from unittest.mock import patch
 
 from engines.multi_timeframe import (
     evaluate_mtf_alignment,
     normalize_bias,
     TIMEFRAME_PRESETS,
+    analyze_multi_timeframe,
 )
 
 
@@ -134,6 +136,121 @@ class TestMultiTimeframe(unittest.TestCase):
         self.assertIn("INTRADAY", TIMEFRAME_PRESETS)
         self.assertIn("SWING", TIMEFRAME_PRESETS)
         self.assertIn("SCALPING", TIMEFRAME_PRESETS)
+
+    # ==========================================
+    # AUTOMATIC MULTI-TIMEFRAME TESTS
+    # ==========================================
+
+    @patch("engines.market_bias.analyze_market_bias")
+    def test_automatic_bullish_alignment(self, mock_analysis):
+
+        mock_analysis.return_value = {
+            "bias": "BULLISH",
+            "status": "ANALYZED",
+            "reason": "Higher highs and higher lows.",
+        }
+
+        market_data = {
+            "4h": object(),
+            "1h": object(),
+            "15min": object(),
+        }
+
+        result = analyze_multi_timeframe(market_data)
+
+        self.assertTrue(result["aligned"])
+        self.assertEqual(result["direction"], "BULLISH")
+        self.assertTrue(result["buy_allowed_by_alignment"])
+        self.assertEqual(mock_analysis.call_count, 3)
+
+    @patch("engines.market_bias.analyze_market_bias")
+    def test_automatic_bearish_alignment(self, mock_analysis):
+
+        mock_analysis.return_value = {
+            "bias": "BEARISH",
+            "status": "ANALYZED",
+            "reason": "Lower highs and lower lows.",
+        }
+
+        market_data = {
+            "4h": object(),
+            "1h": object(),
+            "15min": object(),
+        }
+
+        result = analyze_multi_timeframe(market_data)
+
+        self.assertTrue(result["aligned"])
+        self.assertEqual(result["direction"], "BEARISH")
+        self.assertTrue(result["sell_allowed_by_alignment"])
+
+    @patch("engines.market_bias.analyze_market_bias")
+    def test_missing_timeframe_blocks_alignment(self, mock_analysis):
+
+        mock_analysis.return_value = {
+            "bias": "BULLISH",
+            "status": "ANALYZED",
+            "reason": "Bullish structure.",
+        }
+
+        market_data = {
+            "4h": object(),
+            "1h": object(),
+            # 15min data intentionally missing
+        }
+
+        result = analyze_multi_timeframe(market_data)
+
+        self.assertFalse(result["aligned"])
+        self.assertEqual(result["direction"], "NEUTRAL")
+        self.assertFalse(result["buy_allowed_by_alignment"])
+        self.assertFalse(result["sell_allowed_by_alignment"])
+        self.assertEqual(
+            result["timeframe_analysis"]["LTF"]["status"],
+            "MISSING_DATA",
+        )
+
+    def test_invalid_market_data_type(self):
+
+        with self.assertRaises(ValueError):
+            analyze_multi_timeframe(
+                market_data_by_timeframe=None
+            )
+
+    def test_automatic_scalping_timeframes(self):
+
+        with patch(
+            "engines.market_bias.analyze_market_bias"
+        ) as mock_analysis:
+
+            mock_analysis.return_value = {
+                "bias": "BULLISH",
+                "status": "ANALYZED",
+                "reason": "Bullish structure.",
+            }
+
+            market_data = {
+                "1h": object(),
+                "15min": object(),
+                "5min": object(),
+            }
+
+            result = analyze_multi_timeframe(
+                market_data,
+                preset="SCALPING",
+            )
+
+            self.assertEqual(
+                result["timeframe_analysis"]["HTF"]["timeframe"],
+                "1h",
+            )
+
+            self.assertEqual(
+                result["timeframe_analysis"]["LTF"]["timeframe"],
+                "5min",
+            )
+
+            self.assertTrue(result["aligned"])
 
 
 if __name__ == "__main__":
