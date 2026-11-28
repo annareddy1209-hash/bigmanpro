@@ -1,88 +1,80 @@
+"""
+BIGMAN Trading Intelligence System
+Central Configuration
 
-# ==========================================
-# BIGMAN — CENTRAL CONFIGURATION
-# ==========================================
+Paper trading and market analysis only.
+Live orders remain disabled.
+"""
 
 APP_NAME = "BIGMAN"
-APP_VERSION = "0.1"
+APP_VERSION = "1.0.0"
 
-# ------------------------------------------
-# TRADING MODE
-# ------------------------------------------
+# Trading safety
+TRADING_MODE = "PAPER"
+LIVE_ORDERS_ENABLED = False
 
-DEFAULT_MODE = "Paper Trading"
+# Market data provider
+MARKET_DATA_PROVIDER = "TWELVE_DATA"
 
-PAPER_TRADING_ENABLED = True
-LIVE_TRADING_ENABLED = False
+# API key is stored securely in Streamlit Secrets
+TWELVE_DATA_API_KEY_NAME = "TWELVE_DATA_API_KEY"
 
-# ------------------------------------------
-# ACCOUNT SETTINGS
-# ------------------------------------------
+# Supported trading instruments
+SUPPORTED_SYMBOLS = {
+    "Gold": "XAU/USD",
+    "Bitcoin": "BTC/USD",
+    "Ethereum": "ETH/USD",
+    "Zcash": "ZEC/USDT",
+}
 
-DEFAULT_ACCOUNT_BALANCE = 10000.0
+# Crypto instruments
+CRYPTO_SYMBOLS = [
+    "BTC/USD",
+    "ETH/USD",
+    "ZEC/USDT",
+]
 
-# Risk settings are provisional.
-# They must be validated before actual trading.
+# Forex and commodity instruments
+OTHER_SYMBOLS = [
+    "XAU/USD",
+]
 
+# Supported chart intervals
+SUPPORTED_INTERVALS = [
+    "5min",
+    "15min",
+    "1h",
+    "4h",
+]
+
+# Default chart settings
+DEFAULT_SYMBOL = "XAU/USD"
+DEFAULT_INTERVAL = "15min"
+DEFAULT_CANDLE_LIMIT = 200
+
+# Risk management
 DEFAULT_RISK_PERCENT = 1.0
 MAX_RISK_PERCENT = 2.0
 
-# ------------------------------------------
-# RISK-REWARD SETTINGS
-# ------------------------------------------
-
+# Risk reward
+DEFAULT_RISK_REWARD = 2.0
 MINIMUM_RISK_REWARD = 2.0
 
-# ------------------------------------------
-# STRATEGY SETTINGS
-# ------------------------------------------
+# Signal settings
+MINIMUM_CONFLUENCE = 3
 
-PRICE_ACTION_STRATEGIES = 5
-SMC_STRATEGIES = 10
-RISK_MANAGEMENT_STRATEGIES = 1
+# Strategy settings
+ENABLE_PRICE_ACTION = True
+ENABLE_SMART_MONEY_CONCEPTS = True
+ENABLE_MULTI_TIMEFRAME = True
 
-TOTAL_STRATEGIES = (
-    PRICE_ACTION_STRATEGIES
-    + SMC_STRATEGIES
-    + RISK_MANAGEMENT_STRATEGIES
-)
+# Backtesting
+BACKTESTING_ENABLED = True
 
-# ------------------------------------------
-# MARKET SETTINGS
-# ------------------------------------------
+# Paper trading
+PAPER_TRADING_ENABLED = True
+PAPER_INITIAL_BALANCE = 10000.0
 
-SUPPORTED_ASSETS = [
-    "EURUSD",
-    "GBPUSD",
-    "XAUUSD",
-    "BTCUSD"
-]
-
-DEFAULT_TIMEFRAMES = [
-    "4H",
-    "1H",
-    "15M",
-    "5M"
-]
-
-# ------------------------------------------
-# EXECUTION SAFETY
-# ------------------------------------------
-
-ALLOW_AUTOMATIC_ORDERS = False
+# Safety confirmation
 REQUIRE_STOP_LOSS = True
-REQUIRE_RISK_VALIDATION = True
-
-# ------------------------------------------
-# DATABASE
-# ------------------------------------------
-
-DATABASE_NAME = "bigman.db"
-
-# ------------------------------------------
-# SYSTEM STATUS
-# ------------------------------------------
-
-MARKET_DATA_CONNECTED = False
-STRATEGY_ENGINE_ENABLED = False
-BACKTESTING_ENABLED = False
+REQUIRE_TAKE_PROFIT = True
